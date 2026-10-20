@@ -1,0 +1,90 @@
+@page "/"
+@rendermode InteractiveServer
+@using BlazorDbzPersonagem.Models
+@using BlazorDbzPersonagem.Services
+@inject PersonagemService PersonagemService
+
+<PageTitle>Personagem - Dragon Ball</PageTitle>
+
+<h1>Buscar personagem de Dragon Ball</h1>
+
+<form class="busca" @onsubmit="BuscarAsync">
+    <label for="id">Id do personagem</label>
+    <input id="id" type="number" min="1" @bind="id" />
+    <button type="submit" disabled="@carregando">Buscar</button>
+</form>
+
+@if (carregando)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (erro != null)
+{
+    <p class="erro">@erro</p>
+}
+else if (personagem != null)
+{
+    <div class="card">
+        @if (!string.IsNullOrEmpty(personagem.Imagem))
+        {
+            <img src="@personagem.Imagem" alt="@personagem.Nome" />
+        }
+        <div>
+            <p><strong>Nome:</strong> @personagem.Nome</p>
+            <p><strong>Planeta:</strong> @(personagem.Planeta?.Nome ?? "Não informado")</p>
+            <p><strong>Transformações:</strong></p>
+            @if (personagem.Transformacoes.Count == 0)
+            {
+                <p>Nenhuma transformação.</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var transformacao in personagem.Transformacoes)
+                    {
+                        <li>@transformacao.Nome (Ki: @transformacao.Ki)</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private int id = 1;
+    private Personagem? personagem;
+    private string? erro;
+    private bool carregando;
+
+    private async Task BuscarAsync()
+    {
+        personagem = null;
+        erro = null;
+
+        if (id < 1)
+        {
+            erro = "Informe um id maior que zero.";
+            return;
+        }
+
+        carregando = true;
+
+        try
+        {
+            personagem = await PersonagemService.GetPersonagemAsync(id);
+
+            if (personagem == null)
+            {
+                erro = $"Nenhum personagem encontrado com o id {id}.";
+            }
+        }
+        catch (Exception ex)
+        {
+            erro = $"Erro ao consumir a API: {ex.Message}";
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+}
